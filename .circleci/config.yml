@@ -4,6 +4,7 @@ version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@4.1.2
+  ansible-playbook: orbss/ansible-playbook@0.0.5
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
@@ -22,8 +23,24 @@ jobs:
             set -x
             aws cloudformation deploy --template-file cloudformation/service.yml --stack-name sampleStack
 
+  execute-ansible:
+    executor: ansible-playbook/default
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:tjK9gM9gNMqJPH9EQ5eGySIe/BD/th6Y/OeohtKUVAk"
+      - ansible-playbook/install:
+          version: 2.16.3
+      - ansible-playbook/playbook:
+          playbook: ansible/playbook.yml
+          playbook-options: '-i ansible/inventory'
+
 workflows:
   circleci-live15-20240217-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
       - execute-cloud-formation
+      - execute-ansible:
+          requires:
+            - execute-cloud-formation
